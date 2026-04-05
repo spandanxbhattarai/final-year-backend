@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("STAFF") // ADMIN | STAFF
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Table {
+  id           Int           @id @default(autoincrement())
+  number       Int           @unique
+  capacity     Int
+  floor        String        @default("Main")
+  status       String        @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | MAINTENANCE
+  reservations Reservation[]
+  orders       Order[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Reservation {
+  id           Int      @id @default(autoincrement())
+  customerName String
+  phone        String
+  email        String?
+  date         String
+  time         String
+  partySize    Int
+  status       String   @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
+  tableId      Int?
+  table        Table?   @relation(fields: [tableId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model MenuCategory {
+  id    Int        @id @default(autoincrement())
+  name  String     @unique
+  items MenuItem[]
+}
+
+model MenuItem {
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String
+  price       Float
+  category    String
+  imageUrl    String?
+  available   Boolean       @default(true)
+  categoryRel MenuCategory? @relation(fields: [category], references: [name])
+  orderItems  OrderItem[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  tableId      Int
+  table        Table       @relation(fields: [tableId], references: [id])
+  customerName String
+  status       String      @default("PENDING") // PENDING | PREPARING | READY | SERVED | CANCELLED
+  items        OrderItem[]
+  total        Float       @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId Int
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  price      Float
+  notes      String?
+}
+
+model CallLog {
+  id          Int      @id @default(autoincrement())
+  callerName  String
+  callerPhone String
+  duration    Int      @default(0)
+  status      String   @default("COMPLETED") // COMPLETED | MISSED | VOICEMAIL
+  transcript  String?
+  createdAt   DateTime @default(now())
+}
