@@ -8,10 +8,9 @@ RUN bun install --frozen-lockfile
 
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
-RUN bunx prisma generate
-
 COPY tsconfig.json ./
 COPY src ./src/
+RUN bunx prisma generate
 RUN bun run build
 
 # Production stage

@@ -47,11 +47,11 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
               select: { tableId: true },
             });
 
-            const bookedTableIds = new Set(conflicting.map((r) => r.tableId).filter(Boolean));
-            const available = tables.filter((t) => !bookedTableIds.has(t.id));
+            const bookedTableIds = new Set(conflicting.map((r: any) => r.tableId).filter(Boolean));
+            const available = tables.filter((t: any) => !bookedTableIds.has(t.id));
 
             if (available.length > 0) {
-              const tableList = available.map((t) => `Table ${t.number} (seats ${t.capacity}, ${t.floor} floor, ID: ${t.id})`).join(', ');
+              const tableList = available.map((t: any) => `Table ${t.number} (seats ${t.capacity}, ${t.floor} floor, ID: ${t.id})`).join(', ');
               result = `We have ${available.length} table(s) available for a party of ${partySize} on ${date} at ${time}. Available tables: ${tableList}`;
             } else {
               result = `Sorry, no tables are available for a party of ${partySize} on ${date} at ${time}. Please suggest an alternative date or time.`;
@@ -106,8 +106,8 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
               orderBy: { name: 'asc' },
             });
 
-            const catList = categories.map((c) => c.name).join(', ');
-            const itemList = items.map((i) => `${i.name} - ${i.description} ($${i.price.toFixed(2)}, category: ${i.category})`).join('; ');
+            const catList = categories.map((c: any) => c.name).join(', ');
+            const itemList = items.map((i: any) => `${i.name} - ${i.description} ($${i.price.toFixed(2)}, category: ${i.category})`).join('; ');
             result = `Menu categories: ${catList}. Items: ${itemList}`;
             break;
           }
@@ -167,7 +167,7 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
             });
 
             if (reservations.length > 0) {
-              const list = reservations.map((r) => {
+              const list = reservations.map((r: any) => {
                 const tableInfo = r.table ? `, Table ${r.table.number} (${r.table.floor} floor)` : ', no table assigned yet';
                 return `Reservation #${r.id}: ${r.customerName}, party of ${r.partySize}, ${r.date} at ${r.time}, status: ${r.status}${tableInfo}`;
               }).join('; ');
