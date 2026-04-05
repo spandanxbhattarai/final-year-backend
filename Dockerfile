@@ -7,6 +7,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 RUN bunx prisma generate
 
 COPY tsconfig.json ./
@@ -22,6 +23,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 EXPOSE 3000
 
