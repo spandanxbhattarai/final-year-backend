@@ -1,0 +1,26 @@
+databases:
+  - name: final-year-db
+    plan: free
+    databaseName: finalyeardb
+    user: finalyearuser
+
+services:
+  - type: web
+    name: final-year-backend
+    runtime: docker
+    plan: free
+    branch: deploy
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: final-year-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
