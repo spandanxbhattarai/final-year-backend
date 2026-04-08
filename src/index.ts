@@ -34,6 +34,9 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Health check
+app.get('/', (_req, res) => {
+  res.json({ status: 'ok' });
+});
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
