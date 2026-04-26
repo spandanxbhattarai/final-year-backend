@@ -73,7 +73,7 @@ model Order {
   customerName String
   status       String      @default("PENDING") // PENDING | PREPARING | READY | SERVED | CANCELLED
   type         String      @default("DINE_IN") // DINE_IN | PHONE
-  date         String      // e.g. "2026-04-26"
+  date         String      @default("") // e.g. "2026-04-26"
   prepareBy    String?     // e.g. "14:30" – deadline for staff
   items        OrderItem[]
   total        Float       @default(0)
