@@ -117,6 +117,77 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
             break;
           }
 
+          case 'createOrder': {
+            const { customerName: orderCustomer, items: orderItemsArg, prepareBy: orderPrepareBy } = args;
+
+            if (!orderCustomer || !orderItemsArg || !Array.isArray(orderItemsArg) || orderItemsArg.length === 0) {
+              result = 'Please provide customer name and at least one item with name and quantity.';
+              break;
+            }
+
+            // Look up menu items by name (case-insensitive)
+            const itemNames = orderItemsArg.map((i: any) => i.name?.toLowerCase()).filter(Boolean);
+            const menuItemsFound = await prisma.menuItem.findMany({
+              where: {
+                available: true,
+                name: { in: itemNames, mode: 'insensitive' },
+              },
+            });
+
+            const menuMap = new Map(menuItemsFound.map((m: any) => [m.name.toLowerCase(), m]));
+
+            const notFound: string[] = [];
+            let orderTotal = 0;
+            const orderItemsData: { menuItemId: number; quantity: number; price: number; notes: string | null }[] = [];
+
+            for (const item of orderItemsArg) {
+              const menuItem = menuMap.get(item.name?.toLowerCase());
+              if (!menuItem) {
+                notFound.push(item.name);
+                continue;
+              }
+              const qty = Number(item.quantity) || 1;
+              orderTotal += menuItem.price * qty;
+              orderItemsData.push({
+                menuItemId: menuItem.id,
+                quantity: qty,
+                price: menuItem.price,
+                notes: item.notes || null,
+              });
+            }
+
+            if (orderItemsData.length === 0) {
+              result = `Could not find any of the requested items on the menu: ${notFound.join(', ')}. Please check the menu and try again.`;
+              break;
+            }
+
+            const orderTodayStr = new Date().toISOString().slice(0, 10);
+
+            const newOrder = await prisma.order.create({
+              data: {
+                customerName: orderCustomer,
+                type: 'PHONE',
+                date: orderTodayStr,
+                prepareBy: orderPrepareBy || null,
+                total: orderTotal,
+                items: { create: orderItemsData },
+              },
+              include: {
+                table: true,
+                items: { include: { menuItem: true } },
+              },
+            });
+
+            getIO().emit('order:created', newOrder);
+            getIO().emit('new-order', { customerName: orderCustomer });
+
+            const itemSummary = newOrder.items.map((i: any) => `${i.quantity}x ${i.menuItem.name}`).join(', ');
+            const notFoundMsg = notFound.length > 0 ? ` Note: could not find these items: ${notFound.join(', ')}.` : '';
+            const prepareByMsg = orderPrepareBy ? ` It will be ready by ${orderPrepareBy}.` : '';
+            result = `Order #${newOrder.id} created successfully! Items: ${itemSummary}. Total: $${orderTotal.toFixed(2)}.${prepareByMsg}${notFoundMsg} The order is being prepared.`;
+            break;
+          }
+
           case 'cancelReservation': {
             const { reservationId, phone: callerPhone } = args;
 

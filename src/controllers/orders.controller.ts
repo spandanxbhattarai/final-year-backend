@@ -4,9 +4,13 @@ import { getIO } from '../lib/socket';
 
 export const getOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { status } = req.query;
+    const { status, date } = req.query;
     const where: any = {};
     if (status) where.status = status;
+
+    // Default to today's orders unless a specific date is provided
+    const todayStr = new Date().toISOString().slice(0, 10);
+    where.date = (date as string) || todayStr;
 
     const orders = await prisma.order.findMany({
       where,
@@ -44,7 +48,7 @@ export const getOrder = async (req: Request, res: Response): Promise<void> => {
 
 export const createOrder = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tableId, customerName, items } = req.body;
+    const { tableId, customerName, items, prepareBy } = req.body;
 
     // Fetch menu item prices to calculate total
     const menuItemIds = items.map((i: any) => i.menuItemId);
@@ -66,10 +70,14 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       };
     });
 
+    const todayStr = new Date().toISOString().slice(0, 10);
+
     const order = await prisma.order.create({
       data: {
-        tableId,
+        tableId: tableId || null,
         customerName,
+        date: todayStr,
+        prepareBy: prepareBy || null,
         total,
         items: { create: orderItems },
       },
@@ -79,14 +87,17 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       },
     });
 
-    // Update table status to occupied
-    await prisma.table.update({
-      where: { id: tableId },
-      data: { status: 'OCCUPIED' },
-    });
+    // Update table status to occupied if a table was assigned
+    if (tableId) {
+      await prisma.table.update({
+        where: { id: tableId },
+        data: { status: 'OCCUPIED' },
+      });
+      getIO().emit('table:updated', { id: tableId, status: 'OCCUPIED' });
+    }
 
     getIO().emit('order:created', order);
-    getIO().emit('table:updated', { id: tableId, status: 'OCCUPIED' });
+    getIO().emit('new-order', { customerName });
 
     res.status(201).json(order);
   } catch {

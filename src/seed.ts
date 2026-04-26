@@ -91,6 +91,7 @@ const seed = async () => {
       tableId: tables[2].id,
       customerName: 'Table 3 Guest',
       status: 'PREPARING',
+      date: today,
       total: 56.97,
       items: {
         create: [
@@ -107,6 +108,7 @@ const seed = async () => {
       tableId: tables[7].id,
       customerName: 'Table 8 Guest',
       status: 'PENDING',
+      date: today,
       total: 73.97,
       items: {
         create: [
