@@ -71,6 +71,7 @@ model Order {
   tableId      Int?
   table        Table?      @relation(fields: [tableId], references: [id])
   customerName String
+  phone        String      @default("") // caller phone for lookup/cancel
   status       String      @default("PENDING") // PENDING | PREPARING | READY | SERVED | CANCELLED
   type         String      @default("DINE_IN") // DINE_IN | PHONE
   date         String      @default("") // e.g. "2026-04-26"

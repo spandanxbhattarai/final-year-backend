@@ -118,10 +118,10 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
           }
 
           case 'createOrder': {
-            const { customerName: orderCustomer, items: orderItemsArg, prepareBy: orderPrepareBy } = args;
+            const { customerName: orderCustomer, phone: orderPhone, items: orderItemsArg, prepareBy: orderPrepareBy, date: orderDate, tableId: orderTableId } = args;
 
             if (!orderCustomer || !orderItemsArg || !Array.isArray(orderItemsArg) || orderItemsArg.length === 0) {
-              result = 'Please provide customer name and at least one item with name and quantity.';
+              result = 'Please provide customer name, phone number, and at least one item with name and quantity.';
               break;
             }
 
@@ -161,13 +161,18 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
               break;
             }
 
-            const orderTodayStr = new Date().toISOString().slice(0, 10);
+            // Use provided date or default to today
+            const orderDateStr = orderDate || new Date().toISOString().slice(0, 10);
+            // Determine type: if tableId is provided, it's dine-in, otherwise phone/takeaway
+            const orderType = orderTableId ? 'DINE_IN' : 'PHONE';
 
             const newOrder = await prisma.order.create({
               data: {
                 customerName: orderCustomer,
-                type: 'PHONE',
-                date: orderTodayStr,
+                phone: orderPhone || '',
+                tableId: orderTableId ? Number(orderTableId) : null,
+                type: orderType,
+                date: orderDateStr,
                 prepareBy: orderPrepareBy || null,
                 total: orderTotal,
                 items: { create: orderItemsData },
@@ -178,13 +183,106 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
               },
             });
 
+            // If dine-in with a table, mark table as occupied
+            if (orderTableId) {
+              await prisma.table.update({
+                where: { id: Number(orderTableId) },
+                data: { status: 'OCCUPIED' },
+              });
+              getIO().emit('table:updated', { id: Number(orderTableId), status: 'OCCUPIED' });
+            }
+
             getIO().emit('order:created', newOrder);
             getIO().emit('new-order', { customerName: orderCustomer });
 
             const itemSummary = newOrder.items.map((i: any) => `${i.quantity}x ${i.menuItem.name}`).join(', ');
             const notFoundMsg = notFound.length > 0 ? ` Note: could not find these items: ${notFound.join(', ')}.` : '';
             const prepareByMsg = orderPrepareBy ? ` It will be ready by ${orderPrepareBy}.` : '';
-            result = `Order #${newOrder.id} created successfully! Items: ${itemSummary}. Total: $${orderTotal.toFixed(2)}.${prepareByMsg}${notFoundMsg} The order is being prepared.`;
+            const tableMsg = newOrder.table ? ` Linked to Table ${newOrder.table.number}.` : '';
+            const dateMsg = orderDateStr !== new Date().toISOString().slice(0, 10) ? ` Scheduled for ${orderDateStr}.` : '';
+            result = `Order #${newOrder.id} created successfully! Items: ${itemSummary}. Total: $${orderTotal.toFixed(2)}.${prepareByMsg}${dateMsg}${tableMsg}${notFoundMsg} The order is being prepared.`;
+            break;
+          }
+
+          case 'lookupOrder': {
+            const { phone: orderLookupPhone } = args;
+
+            const orders = await prisma.order.findMany({
+              where: {
+                phone: orderLookupPhone,
+                status: { notIn: ['CANCELLED'] },
+              },
+              include: {
+                table: true,
+                items: { include: { menuItem: true } },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 5,
+            });
+
+            if (orders.length > 0) {
+              const list = orders.map((o: any) => {
+                const itemList = o.items.map((i: any) => `${i.quantity}x ${i.menuItem.name}`).join(', ');
+                const tableInfo = o.table ? `, Table ${o.table.number}` : '';
+                const prepareInfo = o.prepareBy ? `, pickup by ${o.prepareBy}` : '';
+                return `Order #${o.id}: ${o.customerName}, ${o.type === 'PHONE' ? 'Takeaway' : 'Dine-in'}${tableInfo}, ${o.date}${prepareInfo}, status: ${o.status}, items: ${itemList}, total: $${o.total.toFixed(2)}`;
+              }).join('; ');
+              result = `Found ${orders.length} order(s). ${list}`;
+            } else {
+              result = 'No active orders found for this phone number.';
+            }
+            break;
+          }
+
+          case 'cancelOrder': {
+            const { orderId, phone: cancelOrderPhone } = args;
+
+            const orderToCancel = await prisma.order.findUnique({
+              where: { id: Number(orderId) },
+              include: { table: true },
+            });
+
+            if (!orderToCancel) {
+              result = 'Order not found. Please check the order ID and try again.';
+              break;
+            }
+
+            if (orderToCancel.phone !== cancelOrderPhone) {
+              result = 'Phone number does not match the order on file. Cannot cancel.';
+              break;
+            }
+
+            if (orderToCancel.status === 'CANCELLED') {
+              result = 'This order is already cancelled.';
+              break;
+            }
+
+            const cancelledOrder = await prisma.order.update({
+              where: { id: Number(orderId) },
+              data: { status: 'CANCELLED' },
+              include: { table: true, items: { include: { menuItem: true } } },
+            });
+
+            // Free the table if dine-in and no other active orders on it
+            if (cancelledOrder.tableId) {
+              const activeOrders = await prisma.order.count({
+                where: {
+                  tableId: cancelledOrder.tableId,
+                  status: { notIn: ['COMPLETED', 'CANCELLED'] },
+                },
+              });
+              if (activeOrders === 0) {
+                await prisma.table.update({
+                  where: { id: cancelledOrder.tableId },
+                  data: { status: 'AVAILABLE' },
+                });
+                getIO().emit('table:updated', { id: cancelledOrder.tableId, status: 'AVAILABLE' });
+              }
+            }
+
+            getIO().emit('order:updated', cancelledOrder);
+
+            result = `Order #${orderId} for ${orderToCancel.customerName} has been cancelled successfully.`;
             break;
           }
 
