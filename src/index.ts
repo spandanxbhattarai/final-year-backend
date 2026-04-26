@@ -26,7 +26,15 @@ initSocket(httpServer);
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: config.clientUrl,
+  origin: (origin, callback) => {
+    const allowed = config.clientUrl.split(',').map(s => s.trim());
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
   credentials: true,
 }));
 app.use(morgan('dev'));

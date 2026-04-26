@@ -44,6 +44,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     res.json({
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       accessToken,
+      refreshToken,
     });
   } catch (err) {
     res.status(500).json({ message: 'Login failed' });
@@ -79,6 +80,7 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
     res.status(201).json({
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       accessToken,
+      refreshToken,
     });
   } catch (err) {
     res.status(500).json({ message: 'Registration failed' });
@@ -87,7 +89,7 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
 
 export const refresh = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const token = req.cookies?.refreshToken;
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!token) {
       res.status(401).json({ message: 'No refresh token' });
       return;
