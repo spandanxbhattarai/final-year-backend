@@ -363,17 +363,22 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
 
     // For end-of-call-report, log the call
     if (payload?.type === 'end-of-call-report') {
-      const { customer, transcript, call } = payload;
+      const { customer, transcript, call, summary, recordingUrl, artifact } = payload;
 
-      await prisma.callLog.create({
+      const callLog = await prisma.callLog.create({
         data: {
+          vapiCallId: call?.id || null,
           callerName: customer?.name || 'Unknown Caller',
           callerPhone: customer?.number || 'Unknown',
           duration: Math.round((call?.duration || 0)),
           status: 'COMPLETED',
-          transcript: transcript || null,
+          summary: summary || artifact?.summary || null,
+          transcript: transcript || artifact?.transcript || null,
+          recordingUrl: recordingUrl || artifact?.recordingUrl || call?.recordingUrl || null,
         },
       });
+
+      getIO().emit('call-log:created', callLog);
 
       res.json({ ok: true });
       return;

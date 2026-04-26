@@ -94,11 +94,14 @@ model OrderItem {
 }
 
 model CallLog {
-  id          Int      @id @default(autoincrement())
-  callerName  String
-  callerPhone String
-  duration    Int      @default(0)
-  status      String   @default("COMPLETED") // COMPLETED | MISSED | VOICEMAIL
-  transcript  String?
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  vapiCallId   String?  @unique // VAPI call ID for reference
+  callerName   String
+  callerPhone  String
+  duration     Int      @default(0)
+  status       String   @default("COMPLETED") // COMPLETED | MISSED | VOICEMAIL
+  summary      String?  // AI-generated call summary
+  transcript   String?  // Full conversation transcript
+  recordingUrl String?  // VAPI recording audio URL
+  createdAt    DateTime @default(now())
 }
