@@ -31,13 +31,14 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
             const { date, time, partySize } = args;
             const tables = await prisma.table.findMany({
               where: {
-                status: 'AVAILABLE',
+                status: { in: ['AVAILABLE', 'OCCUPIED'] },
                 capacity: { gte: Number(partySize) },
               },
               orderBy: { capacity: 'asc' },
             });
 
-            // Also check existing reservations for the same date/time
+            // Filter out tables that are in MAINTENANCE
+            // Check existing reservations for the same date/time
             const conflicting = await prisma.reservation.findMany({
               where: {
                 date,
@@ -75,15 +76,6 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
               },
               include: { table: true },
             });
-
-            // If a table was assigned, mark it as reserved
-            if (reservation.tableId) {
-              await prisma.table.update({
-                where: { id: reservation.tableId },
-                data: { status: 'RESERVED' },
-              });
-              getIO().emit('table:updated', { id: reservation.tableId, status: 'RESERVED' });
-            }
 
             getIO().emit('reservation:created', reservation);
             getIO().emit('new-reservation', { customerName });

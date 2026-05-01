@@ -60,15 +60,6 @@ export const updateReservation = async (req: Request, res: Response): Promise<vo
       include: { table: true },
     });
 
-    // If reservation is confirmed and has a table, update table status
-    if (reservation.status === 'CONFIRMED' && reservation.tableId) {
-      await prisma.table.update({
-        where: { id: reservation.tableId },
-        data: { status: 'RESERVED' },
-      });
-      getIO().emit('table:updated', { id: reservation.tableId, status: 'RESERVED' });
-    }
-
     // If reservation is cancelled and had a table, free it
     if (reservation.status === 'CANCELLED' && reservation.tableId) {
       await prisma.table.update({
