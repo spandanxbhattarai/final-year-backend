@@ -18,6 +18,7 @@ import callLogsRoutes from './routes/callLogs.routes';
 import vapiRoutes from './routes/vapi.routes';
 import usersRoutes from './routes/users.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import contactRoutes from './routes/contact.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -61,6 +62,7 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/call-logs', callLogsRoutes);
 app.use('/api/vapi', vapiRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Global error handler
 app.use(errorHandler);

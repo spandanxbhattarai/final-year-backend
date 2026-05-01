@@ -104,3 +104,14 @@ model CallLog {
   recordingUrl String?
   createdAt    DateTime @default(now())
 }
+
+model ContactMessage {
+  id             Int      @id @default(autoincrement())
+  name           String
+  restaurantName String?
+  email          String
+  phone          String?
+  message        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
