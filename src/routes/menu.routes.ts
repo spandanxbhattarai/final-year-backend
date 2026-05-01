@@ -8,7 +8,7 @@ import {
   deleteMenuItem,
   toggleAvailability,
 } from '../controllers/menu.controller';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireStaffOrAbove } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createMenuItemSchema, updateMenuItemSchema } from '../schemas';
 
@@ -18,10 +18,10 @@ router.use(authenticate);
 
 router.get('/', getMenuItems);
 router.get('/categories', getCategories);
-router.post('/categories', requireAdmin, createCategory);
-router.post('/', requireAdmin, validate(createMenuItemSchema), createMenuItem);
-router.patch('/:id', requireAdmin, validate(updateMenuItemSchema), updateMenuItem);
-router.delete('/:id', requireAdmin, deleteMenuItem);
-router.patch('/:id/toggle', toggleAvailability);
+router.post('/categories', requireStaffOrAbove, createCategory);
+router.post('/', requireStaffOrAbove, validate(createMenuItemSchema), createMenuItem);
+router.patch('/:id', requireStaffOrAbove, validate(updateMenuItemSchema), updateMenuItem);
+router.delete('/:id', requireStaffOrAbove, deleteMenuItem);
+router.patch('/:id/toggle', requireStaffOrAbove, toggleAvailability);
 
 export default router;

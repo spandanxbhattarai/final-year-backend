@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { getCallLogs, getCallLog, createCallLog } from '../controllers/callLogs.controller';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireAdminOrAbove } from '../middleware/auth';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, requireAdminOrAbove);
 
 router.get('/', getCallLogs);
 router.get('/:id', getCallLog);

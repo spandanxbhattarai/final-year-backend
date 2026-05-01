@@ -19,7 +19,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({ where: { email, isDeleted: false } });
     if (!user) {
       res.status(401).json({ message: 'Invalid credentials' });
       return;
@@ -28,6 +28,11 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       res.status(401).json({ message: 'Invalid credentials' });
+      return;
+    }
+
+    if (user.isBlocked) {
+      res.status(403).json({ message: 'Your account has been blocked. Contact administrator.' });
       return;
     }
 
@@ -55,7 +60,7 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
   try {
     const { name, email, password, role } = req.body;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findFirst({ where: { email, isDeleted: false } });
     if (existing) {
       res.status(409).json({ message: 'Email already registered' });
       return;
@@ -120,4 +125,18 @@ export const refresh = async (req: AuthRequest, res: Response): Promise<void> =>
 export const logout = async (_req: AuthRequest, res: Response): Promise<void> => {
   res.clearCookie('refreshToken', { path: '/' });
   res.json({ message: 'Logged out' });
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { isDeleted: true },
+    });
+
+    res.clearCookie('refreshToken', { path: '/' });
+    res.json({ message: 'Account deleted' });
+  } catch {
+    res.status(500).json({ message: 'Failed to delete account' });
+  }
 };

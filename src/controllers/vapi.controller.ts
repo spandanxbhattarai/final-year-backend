@@ -86,6 +86,7 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
             }
 
             getIO().emit('reservation:created', reservation);
+            getIO().emit('new-reservation', { customerName });
 
             const tableInfo = reservation.table ? ` Table ${reservation.table.number} has been assigned.` : '';
             result = `Reservation confirmed! Reservation ID: ${reservation.id}. Name: ${customerName}, party of ${partySize}, on ${date} at ${time}.${tableInfo}`;

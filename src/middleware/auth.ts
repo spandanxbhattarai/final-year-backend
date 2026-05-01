@@ -27,11 +27,20 @@ export const authenticate = (req: AuthRequest, res: Response, next: NextFunction
   }
 };
 
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  console.log('Checking admin access for user role:', req);
-  if (req.userRole !== 'ADMIN') {
-    res.status(403).json({ message: 'Admin access required' });
-    return;
-  }
-  next();
+export const requireRole = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.userRole || !roles.includes(req.userRole)) {
+      res.status(403).json({ message: 'Insufficient permissions' });
+      return;
+    }
+    next();
+  };
 };
+
+export const requireSuperAdmin = requireRole('SUPER_ADMIN');
+export const requireAdminOrAbove = requireRole('SUPER_ADMIN', 'ADMIN');
+export const requireStaffOrAbove = requireRole('SUPER_ADMIN', 'ADMIN', 'STAFF');
+export const requireCookOrAbove = requireRole('SUPER_ADMIN', 'ADMIN', 'STAFF', 'COOK');
+
+// Kept for backward compatibility — equivalent to requireAdminOrAbove
+export const requireAdmin = requireAdminOrAbove;

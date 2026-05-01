@@ -44,6 +44,7 @@ export const createReservation = async (req: Request, res: Response): Promise<vo
       include: { table: true },
     });
     getIO().emit('reservation:created', reservation);
+    getIO().emit('new-reservation', { customerName: reservation.customerName });
     res.status(201).json(reservation);
   } catch {
     res.status(500).json({ message: 'Failed to create reservation' });

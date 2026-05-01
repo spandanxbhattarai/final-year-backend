@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,9 +9,11 @@ datasource db {
 model User {
   id        Int      @id @default(autoincrement())
   name      String
-  email     String   @unique
+  email     String
   password  String
-  role      String   @default("STAFF") // ADMIN | STAFF
+  role      String   @default("STAFF")
+  isBlocked Boolean  @default(false)
+  isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -24,11 +23,11 @@ model Table {
   number       Int           @unique
   capacity     Int
   floor        String        @default("Main")
-  status       String        @default("AVAILABLE") // AVAILABLE | OCCUPIED | RESERVED | MAINTENANCE
-  reservations Reservation[]
-  orders       Order[]
+  status       String        @default("AVAILABLE")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  orders       Order[]
+  reservations Reservation[]
 }
 
 model Reservation {
@@ -39,11 +38,11 @@ model Reservation {
   date         String
   time         String
   partySize    Int
-  status       String   @default("PENDING") // PENDING | CONFIRMED | CANCELLED | COMPLETED
+  status       String   @default("PENDING")
   tableId      Int?
-  table        Table?   @relation(fields: [tableId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  table        Table?   @relation(fields: [tableId], references: [id])
 }
 
 model MenuCategory {
@@ -53,55 +52,55 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id          Int           @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   name        String
   description String
   price       Float
   category    String
   imageUrl    String?
-  available   Boolean       @default(true)
-  categoryRel MenuCategory? @relation(fields: [category], references: [name])
+  available   Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  categoryRel MenuCategory @relation(fields: [category], references: [name])
   orderItems  OrderItem[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
 }
 
 model Order {
   id           Int         @id @default(autoincrement())
   tableId      Int?
-  table        Table?      @relation(fields: [tableId], references: [id])
   customerName String
-  phone        String      @default("") // caller phone for lookup/cancel
-  status       String      @default("PENDING") // PENDING | PREPARING | READY | SERVED | CANCELLED
-  type         String      @default("DINE_IN") // DINE_IN | PHONE
-  date         String      @default("") // e.g. "2026-04-26"
-  prepareBy    String?     // e.g. "14:30" – deadline for staff
-  items        OrderItem[]
+  phone        String      @default("")
+  status       String      @default("PENDING")
+  type         String      @default("DINE_IN")
+  date         String      @default("")
+  prepareBy    String?
   total        Float       @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  table        Table?      @relation(fields: [tableId], references: [id])
+  items        OrderItem[]
 }
 
 model OrderItem {
   id         Int      @id @default(autoincrement())
   orderId    Int
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItemId Int
-  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
   quantity   Int
   price      Float
   notes      String?
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
 model CallLog {
   id           Int      @id @default(autoincrement())
-  vapiCallId   String?  @unique // VAPI call ID for reference
+  vapiCallId   String?  @unique
   callerName   String
   callerPhone  String
   duration     Int      @default(0)
-  status       String   @default("COMPLETED") // COMPLETED | MISSED | VOICEMAIL
-  summary      String?  // AI-generated call summary
-  transcript   String?  // Full conversation transcript
-  recordingUrl String?  // VAPI recording audio URL
+  status       String   @default("COMPLETED")
+  summary      String?
+  transcript   String?
+  recordingUrl String?
   createdAt    DateTime @default(now())
 }

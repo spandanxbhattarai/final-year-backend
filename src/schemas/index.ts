@@ -9,7 +9,7 @@ export const registerSchema = z.object({
   name: z.string().min(2, 'Name required').max(100),
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['ADMIN', 'STAFF']).default('STAFF'),
+  role: z.enum(['STAFF', 'COOK']).default('STAFF'),
 });
 
 export const createTableSchema = z.object({
@@ -58,4 +58,25 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(['PENDING', 'PREPARING', 'READY', 'SERVED', 'CANCELLED']),
+});
+
+export const createUserSchema = z.object({
+  name: z.string().min(2, 'Name required').max(100),
+  email: z.string().email('Invalid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['ADMIN', 'STAFF', 'COOK']).default('STAFF'),
+});
+
+export const updateUserSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
+  role: z.enum(['ADMIN', 'STAFF', 'COOK']).optional(),
+  isBlocked: z.boolean().optional(),
+});
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(2).max(100).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
 });

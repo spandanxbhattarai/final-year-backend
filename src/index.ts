@@ -16,6 +16,8 @@ import menuRoutes from './routes/menu.routes';
 import ordersRoutes from './routes/orders.routes';
 import callLogsRoutes from './routes/callLogs.routes';
 import vapiRoutes from './routes/vapi.routes';
+import usersRoutes from './routes/users.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +53,8 @@ app.get('/api/health', (_req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/tables', tablesRoutes);
 app.use('/api/reservations', reservationsRoutes);
 app.use('/api/menu', menuRoutes);

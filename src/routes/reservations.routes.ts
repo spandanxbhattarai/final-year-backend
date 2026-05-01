@@ -6,13 +6,13 @@ import {
   updateReservation,
   deleteReservation,
 } from '../controllers/reservations.controller';
-import { authenticate } from '../middleware/auth';
+import { authenticate, requireStaffOrAbove } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createReservationSchema, updateReservationSchema } from '../schemas';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticate, requireStaffOrAbove);
 
 router.get('/', getReservations);
 router.get('/:id', getReservation);
