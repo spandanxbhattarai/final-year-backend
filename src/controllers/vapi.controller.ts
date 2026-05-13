@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { getIO } from '../lib/socket';
+import { sendSMS } from '../lib/twilio';
 
 /**
  * VAPI Server URL (webhook) handler.
@@ -82,6 +83,14 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
 
             const tableInfo = reservation.table ? ` Table ${reservation.table.number} has been assigned.` : '';
             result = `Reservation confirmed! Reservation ID: ${reservation.id}. Name: ${customerName}, party of ${partySize}, on ${date} at ${time}.${tableInfo}`;
+
+            // Send SMS confirmation (only if call came through Twilio/VAPI)
+            if (phone) {
+              await sendSMS(
+                phone,
+                `Hi ${customerName}, your reservation (#${reservation.id}) is confirmed for ${date} at ${time}, party of ${partySize}.${tableInfo} See you soon!`
+              );
+            }
             break;
           }
 
@@ -194,6 +203,14 @@ export const vapiWebhook = async (req: Request, res: Response): Promise<void> =>
             const tableMsg = newOrder.table ? ` Linked to Table ${newOrder.table.number}.` : '';
             const dateMsg = orderDateStr !== new Date().toISOString().slice(0, 10) ? ` Scheduled for ${orderDateStr}.` : '';
             result = `Order #${newOrder.id} created successfully! Items: ${itemSummary}. Total: $${orderTotal.toFixed(2)}.${prepareByMsg}${dateMsg}${tableMsg}${notFoundMsg} The order is being prepared.`;
+
+            // Send SMS confirmation (only if call came through Twilio/VAPI)
+            if (orderPhone) {
+              await sendSMS(
+                orderPhone,
+                `Hi ${orderCustomer}, your order (#${newOrder.id}) has been placed! Items: ${itemSummary}. Total: $${orderTotal.toFixed(2)}.${prepareByMsg} Thank you!`
+              );
+            }
             break;
           }
 
