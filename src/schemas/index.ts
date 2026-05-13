@@ -29,6 +29,7 @@ export const createReservationSchema = z.object({
   time: z.string().min(1),
   partySize: z.number().int().min(1).max(20),
   tableId: z.number().int().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']).optional(),
 });
 
 export const updateReservationSchema = createReservationSchema.partial().extend({
